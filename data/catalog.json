@@ -1,0 +1,124 @@
+{
+  "settings": {
+    "depositPercent": 25,
+    "depositMinimum": 150,
+    "taxRatePercent": 7,
+    "taxDelivery": true,
+    "minLeadDays": 2,
+    "balanceDueDays": 7,
+    "warehouse": { "address": "106 Industrial Park Cir, Ocean Springs, MS 39564", "lat": 30.407346977183, "lon": -88.761550606803 },
+    "delivery": {
+      "freeMiles": 0,
+      "ratePerMile": 0,
+      "minimumFee": 0,
+      "roundTrip": false,
+      "maxMiles": 250,
+      "confirmed": false
+    }
+  },
+  "groups": [
+    { "cat": "Tents", "name": "High-Peak Frame Tents", "sub": "Peaked tops that join in rows — shade for picnics, festivals, field days", "items": [
+      { "id": "hpf-10x10", "name": "10×10 High-Peak Frame Tent", "desc": "Seats 5–15", "price": 239.99 },
+      { "id": "hpf-10x20", "name": "10×20 High-Peak Frame Tent", "desc": "Seats 15–25", "price": 319.99 },
+      { "id": "hpf-15x15", "name": "15×15 High-Peak Frame Tent", "desc": "Seats 15–25", "price": 339.99 },
+      { "id": "hpf-20x20", "name": "20×20 High-Peak Frame Tent", "desc": "Seats 25–35", "price": 459.99 },
+      { "id": "hpf-20x40", "name": "20×40 High-Peak Frame Tent", "desc": "Seats 50–70", "price": 899.99 },
+      { "id": "hpf-20x60", "name": "20×60 High-Peak Frame Tent", "desc": "Seats 75–90", "price": 1349.99 },
+      { "id": "hpf-20x80", "name": "20×80 High-Peak Frame Tent", "desc": "Seats 100–130", "price": 1799.99 },
+      { "id": "hpf-40x40", "name": "40×40 High-Peak Frame Tent", "desc": "Seats 100–130", "price": 1799.99 }
+    ]},
+    { "cat": "Tents", "name": "Frame Tents", "sub": "No center poles — works on driveways and patios", "items": [
+      { "id": "frame-20x20", "name": "20×20 Frame Tent", "desc": "Seats 25–35", "price": 419.99 },
+      { "id": "frame-20x30", "name": "20×30 Frame Tent", "desc": "Seats 40–50", "price": 609.99 },
+      { "id": "frame-20x40", "name": "20×40 Frame Tent", "desc": "Seats 50–70", "price": 799.99 },
+      { "id": "frame-30x50", "name": "30×50 Frame Tent", "desc": "Seats 80–125", "price": 2599.99 },
+      { "id": "frame-40x40", "name": "40×40 Frame Tent", "desc": "Seats 100–130", "price": 2499.99 },
+      { "id": "frame-40x60", "name": "40×60 Frame Tent", "desc": "Seats 120–160", "price": 2999.99 },
+      { "id": "frame-40x80", "name": "40×80 Frame Tent", "desc": "Seats 150–200", "price": 3699.99 },
+      { "id": "frame-40x100", "name": "40×100 Frame Tent", "desc": "Seats 190–250", "price": 4799.99 }
+    ]},
+    { "cat": "Tents", "name": "White Keder Frame Tents", "sub": "Taut, wrinkle-free premium white top", "items": [
+      { "id": "keder-25x25", "name": "25×25 White Keder Frame Tent", "desc": "", "price": 799.99 },
+      { "id": "keder-30x30", "name": "30×30 White Keder Frame Tent", "desc": "Seats 60–80", "price": 1899.99 },
+      { "id": "keder-30x45", "name": "30×45 White Keder Frame Tent", "desc": "Seats 90–115", "price": 2799.99 },
+      { "id": "keder-30x60", "name": "30×60 White Keder Frame Tent", "desc": "Seats 120–150", "price": 3199.99 }
+    ]},
+    { "cat": "Tents", "name": "Clear-Top Frame Tents", "sub": "Dine under the stars with full weather cover", "items": [
+      { "id": "clear-30x30", "name": "30×30 Clear-Top Frame Tent", "desc": "Seats 60–80", "price": 2999.99 },
+      { "id": "clear-30x45", "name": "30×45 Clear-Top Frame Tent", "desc": "Seats 90–115", "price": 3789.99 },
+      { "id": "clear-30x60", "name": "30×60 Clear-Top Frame Tent", "desc": "Seats 120–150", "price": 4199.99 }
+    ]},
+    { "cat": "Tents", "name": "Wedding Pole Tents", "sub": "High peaks, draped legs and a sculpted ceiling", "items": [
+      { "id": "wpole-40x40", "name": "40×40 Wedding Pole Tent", "desc": "Seats 100–130", "price": 2099.99 },
+      { "id": "wpole-40x60", "name": "40×60 Wedding Pole Tent", "desc": "Seats 120–160", "price": 2699.99 },
+      { "id": "wpole-40x80", "name": "40×80 Wedding Pole Tent", "desc": "Seats 150–200", "price": 3359.99 },
+      { "id": "wpole-40x100", "name": "40×100 Wedding Pole Tent", "desc": "Seats 190–250", "price": 4879.99 },
+      { "id": "wpole-40x120", "name": "40×120 Wedding Pole Tent", "desc": "Seats 225–325", "price": 5599.99 }
+    ]},
+    { "cat": "Tents", "name": "Backyard Pole Tents", "sub": "Same footprint as the wedding pole, simpler finish", "items": [
+      { "id": "bpole-30x50", "name": "30×50 Backyard Pole Tent", "desc": "Seats 80–125", "price": 1499.99 },
+      { "id": "bpole-40x40", "name": "40×40 Backyard Pole Tent", "desc": "Seats 100–130", "price": 1599.99 },
+      { "id": "bpole-40x60", "name": "40×60 Backyard Pole Tent", "desc": "Seats 120–160", "price": 1999.99 },
+      { "id": "bpole-40x80", "name": "40×80 Backyard Pole Tent", "desc": "Seats 150–200", "price": 2699.99 },
+      { "id": "bpole-40x100", "name": "40×100 Backyard Pole Tent", "desc": "Seats 190–250", "price": 3149.99 },
+      { "id": "bpole-40x120", "name": "40×120 Backyard Pole Tent", "desc": "Seats 225–325", "price": 3899.99 }
+    ]},
+    { "cat": "Tents", "name": "Double Pole Tents", "sub": "Twin peaks and a 60-foot span", "items": [
+      { "id": "dpole-60x40", "name": "60×40 Double Pole Tent", "desc": "Seats 120–160", "price": 4399.99 },
+      { "id": "dpole-60x80", "name": "60×80 Double Pole Tent", "desc": "Seats 225–325", "price": 6299.99 },
+      { "id": "dpole-60x120", "name": "60×120 Double Pole Tent", "desc": "Seats 300–500", "price": 8099.99 }
+    ]},
+    { "cat": "Tables", "name": "Tables", "sub": "Rounds for dinners, banquets for buffets, bistros for the bar", "items": [
+      { "id": "table-5round", "name": "5' Round Table", "desc": "Seats 8", "price": 15.99 },
+      { "id": "table-6round", "name": "6' Round Table", "desc": "Seats 10", "price": 16.99 },
+      { "id": "table-6banquet", "name": "6' Banquet Table", "desc": "Seats 6–8", "price": 13.99 },
+      { "id": "table-8banquet", "name": "8' Banquet Table", "desc": "Seats 8–10", "price": 14.99 },
+      { "id": "table-8wood", "name": "8' Wood Table", "desc": "Seats 8–10", "price": 13.99 },
+      { "id": "table-bistro", "name": "Bistro / Cocktail Table", "desc": "30\" round · 42\" tall", "price": 13.99 }
+    ]},
+    { "cat": "Chairs", "name": "Chairs", "sub": "From backyard folding to Chiavari and cross-back", "items": [
+      { "id": "chair-chiavari-gold", "name": "Gold Chiavari Chair", "desc": "", "price": 8.49 },
+      { "id": "chair-chiavari-white", "name": "White Chiavari Chair", "desc": "", "price": 8.49 },
+      { "id": "chair-crossback-fruitwood", "name": "Fruitwood Cross-Back Chair", "desc": "", "price": 8.49 },
+      { "id": "chair-crossback-chestnut", "name": "Chestnut Cross-Back Chair", "desc": "", "price": 8.49 },
+      { "id": "chair-cushion", "name": "Chair Cushion", "desc": "For Chiavari or cross-back", "price": 0.70 },
+      { "id": "chair-resin-white", "name": "White Resin Folding Chair", "desc": "Padded seat", "price": 4.99 },
+      { "id": "chair-resin-black", "name": "Black Resin Folding Chair", "desc": "Padded seat", "price": 4.99 },
+      { "id": "chair-resin-mahogany", "name": "Mahogany Resin Folding Chair", "desc": "Padded seat", "price": 4.99 },
+      { "id": "chair-plastic-white", "name": "White Plastic Folding Chair", "desc": "Backyard & field days", "price": 2.99 },
+      { "id": "chair-plastic-black", "name": "Black Plastic Folding Chair", "desc": "Backyard & corporate", "price": 2.99 }
+    ]},
+    { "cat": "Linens", "name": "Linens", "sub": "Floor-length cloths sized to our tables", "items": [
+      { "id": "linen-5round", "name": "5' Round Linen", "desc": "Floor-length", "price": 16.99 },
+      { "id": "linen-6round", "name": "6' Round Linen", "desc": "Floor-length", "price": 16.99 },
+      { "id": "linen-6banquet", "name": "6' Banquet Linen", "desc": "Floor-length", "price": 16.99 },
+      { "id": "linen-8banquet", "name": "8' Banquet Linen", "desc": "Floor-length", "price": 16.99 },
+      { "id": "linen-bistro-spandex", "name": "Bistro Spandex Linen", "desc": "Fitted", "price": 18.00 },
+      { "id": "linen-bistro-floor", "name": "Bistro Floor-Length Linen", "desc": "Draped", "price": 18.00 }
+    ]},
+    { "cat": "Lighting & Accessories", "name": "Lighting & Tent Accessories", "sub": "Warm light overhead, walls when the weather turns, power when the venue has none", "items": [
+      { "id": "light-bistro", "name": "Bistro String Lighting", "desc": "Warm white, per tent", "price": 100.00 },
+      { "id": "light-chandelier", "name": "Chandelier", "desc": "Each, hung from tent frame", "price": 165.00 },
+      { "id": "light-led", "name": "LED Tent Lights", "desc": "50 ft strand", "price": 44.99 },
+      { "id": "wall-clear", "name": "Clear Sidewall", "desc": "Per 20 ft section", "price": 59.99 },
+      { "id": "wall-cathedral", "name": "Cathedral Window Sidewall", "desc": "Per 20 ft section", "price": 49.99 },
+      { "id": "wall-solid", "name": "Solid Sidewall", "desc": "Per 20 ft section", "price": 39.99 },
+      { "id": "wall-keder-clear", "name": "Clear Keder Sides", "desc": "Per section", "price": 89.99 },
+      { "id": "drape-center-pole", "name": "Center Pole Drape", "desc": "Per pole", "price": 40.00 },
+      { "id": "cover-side-pole", "name": "Side Pole Cover", "desc": "Per pole", "price": 10.00 },
+      { "id": "heater-tower", "name": "Tower Heater", "desc": "Each", "price": 75.00 },
+      { "id": "generator-13k", "name": "13,000 W Generator", "desc": "Each", "price": 199.99 }
+    ]},
+    { "cat": "Dance Floors", "name": "Dance Floors & Underlay", "sub": "Laid level on grass with an underlay", "items": [
+      { "id": "floor-9x9", "name": "9×9 Dance Floor", "desc": "White & dark maple or white & black", "price": 219.99 },
+      { "id": "floor-12x12", "name": "12×12 Dance Floor", "desc": "White & dark maple or white & black", "price": 379.99 },
+      { "id": "floor-15x15-oak", "name": "15×15 Oak Dance Floor", "desc": "", "price": 589.99 },
+      { "id": "floor-18x18-oak", "name": "18×18 Oak Dance Floor", "desc": "", "price": 899.99 },
+      { "id": "floor-21x21", "name": "21×21 Dance Floor", "desc": "White & black", "price": 1099.99 },
+      { "id": "underlay-9x9", "name": "9×9 Underlay (for grass)", "desc": "", "price": 189.99 },
+      { "id": "underlay-15x15", "name": "15×15 Underlay (for grass)", "desc": "", "price": 189.99 },
+      { "id": "underlay-18x18", "name": "18×18 Underlay (for grass)", "desc": "", "price": 299.99 },
+      { "id": "underlay-21x21", "name": "21×21 Underlay (for grass)", "desc": "", "price": 339.99 }
+    ]}
+  ]
+}

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Book Online | BBH Premier Events — Tent &amp; Event Rentals</title>
+<meta name="description" content="Book tents, tables, chairs, linens, lighting and dance floors online. Pick your date, add what you need and pay a deposit or in full. Based in Ocean Springs, MS, serving Mississippi, Alabama and the Southeast.">
+<link rel="canonical" href="https://bbhpremierevents.com/book.html">
+<link rel="icon" href="images/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Jost:wght@300;400;500&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+<script src="js/main.js" defer></script>
+<script src="js/book.js" defer></script>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="index.html" class="logo"><img src="images/logo.png" alt="BBH Premier Events — Tent &amp; Event Rentals"></a>
+  <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="main-nav">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+  <nav class="main-nav" id="main-nav">
+    <a href="index.html">Home</a>
+    <a href="weddings.html">Weddings &amp; Tents</a>
+    <a href="corporate.html">Corporate &amp; Schools</a>
+    <a href="rentals.html">Rentals</a>
+    <a href="contact.html">Contact</a>
+    <a href="book.html" class="btn mobile-cta" aria-current="page">Book Online</a>
+  </nav>
+  <button class="header-cta bk-cart-btn" id="openCart" type="button">Cart <span class="bk-count" id="cartCount">0</span></button>
+</header>
+
+<main>
+<section class="page-intro" style="padding-bottom:40px">
+  <div class="eyebrow">Book online</div>
+  <h1>Build your event.</h1>
+  <p class="lead" style="max-width:640px">Pick your date, add what you need and check out. Pay a deposit to hold your date or pay in full. Delivery is calculated from your address.</p>
+  <div class="bk-datebar" id="datebar">
+    <div class="field" style="flex:1;min-width:220px"><label for="evDate">Event date</label><input type="date" id="evDate"></div>
+    <p class="bk-datenote" id="dateNote">Choose your date first. Online bookings need at least 2 days' notice — for sooner dates, call <a href="tel:+12282437493">(228) 243-7493</a>.</p>
+  </div>
+  <nav class="chip-row" id="catChips" aria-label="Rental categories"></nav>
+</section>
+
+<section class="section" style="padding-top:56px" id="catalog" aria-live="polite">
+  <p class="muted">Loading rentals…</p>
+</section>
+
+<section class="cta-band section-alt" style="border-bottom:0;padding-top:80px;padding-bottom:80px">
+  <h2 style="font-size:40px">Paying with a purchase order, or need something custom?</h2>
+  <p>Schools, businesses and organizations can book on a PO. Sailcloth tents, packages and multi-day events are quoted by request.</p>
+  <a href="contact.html" class="btn btn-gold">Request a Quote</a>
+</section>
+</main>
+
+<!-- Cart & checkout drawer -->
+<div class="bk-drawer" id="drawer" hidden>
+  <div class="bk-panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+    <div class="bk-hd">
+      <h2 id="drawerTitle">Your cart</h2>
+      <button class="bk-close" id="closeCart" type="button" aria-label="Close cart">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <ol class="bk-steps" aria-label="Checkout steps"><li data-s="1" class="on">Cart</li><li data-s="2">Details</li><li data-s="3">Review &amp; pay</li></ol>
+
+    <div class="bk-bd">
+      <!-- Step 1: cart -->
+      <div class="bk-step on" id="step1">
+        <div id="cartLines"></div>
+        <p class="muted" id="cartEmpty">Your cart is empty. Add rentals to get started.</p>
+      </div>
+
+      <!-- Step 2: details -->
+      <form class="bk-step" id="step2" novalidate>
+        <div class="form-row">
+          <div class="field"><label for="c_name">Full name</label><input id="c_name" autocomplete="name" required></div>
+          <div class="field"><label for="c_phone">Phone</label><input id="c_phone" type="tel" autocomplete="tel" required></div>
+        </div>
+        <div class="field"><label for="c_email">Email</label><input id="c_email" type="email" autocomplete="email" required></div>
+        <div class="field"><label for="a_street">Event street address</label><input id="a_street" autocomplete="address-line1" required></div>
+        <div class="bk-addr">
+          <div class="field"><label for="a_city">City</label><input id="a_city" autocomplete="address-level2" required></div>
+          <div class="field"><label for="a_state">State</label>
+            <select id="a_state" autocomplete="address-level1"><option>MS</option><option>AL</option><option>LA</option><option>FL</option><option>GA</option><option>TN</option></select>
+          </div>
+          <div class="field"><label for="a_zip">ZIP</label><input id="a_zip" inputmode="numeric" autocomplete="postal-code" maxlength="10" required></div>
+        </div>
+        <div class="bk-delivery" id="deliveryBox">Enter the address to calculate delivery.</div>
+        <div class="form-row">
+          <div class="field"><label for="d_type">Event type</label>
+            <select id="d_type"><option>Wedding</option><option>Corporate event</option><option>School event</option><option>Festival / community</option><option>Private party</option></select>
+          </div>
+          <div class="field"><label for="d_guests">Guest count</label><input id="d_guests" type="number" min="1" inputmode="numeric"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label for="d_delivery">Delivery &amp; setup</label>
+            <select id="d_delivery"><option>Day before, afternoon</option><option>Morning of (7–10 AM)</option><option>Morning of (10 AM–1 PM)</option><option>Afternoon of (1–4 PM)</option></select>
+          </div>
+          <div class="field"><label for="d_pickup">Pickup</label>
+            <select id="d_pickup"><option>Same evening after event</option><option>Next morning (7–10 AM)</option><option>Next day, afternoon</option><option>Monday after weekend</option></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label for="d_surface">Setup surface</label>
+            <select id="d_surface"><option>Grass</option><option>Concrete / pavement</option><option>Mixed</option><option>No tent</option></select>
+          </div>
+          <div class="field"><label for="d_power">Power on site?</label>
+            <select id="d_power"><option>Yes</option><option>No — need generator</option><option>Not sure</option></select>
+          </div>
+        </div>
+        <div class="field"><label for="d_notes">Notes (gate codes, venue contact, timing)</label><textarea id="d_notes" rows="3"></textarea></div>
+      </form>
+
+      <!-- Step 3: review & pay -->
+      <div class="bk-step" id="step3">
+        <div class="bk-review" id="reviewBox"></div>
+        <fieldset class="bk-pay">
+          <legend>How would you like to pay?</legend>
+          <label class="bk-radio"><input type="radio" name="payMode" value="deposit" checked><span><strong>Pay deposit</strong> <span id="payDepositAmt"></span><small id="payDepositNote"></small></span></label>
+          <label class="bk-radio"><input type="radio" name="payMode" value="full"><span><strong>Pay in full</strong> <span id="payFullAmt"></span><small>Nothing more to pay later.</small></span></label>
+        </fieldset>
+        <div class="bk-terms">
+          <strong>Rental terms</strong>
+          <ul>
+            <li>Deposits are non-refundable and are applied to your order total.</li>
+            <li>The remaining balance is due 7 days before your event.</li>
+            <li>Delivery is priced by driving distance from our Ocean Springs warehouse.</li>
+            <li>The setup area must be clear and accessible. We'll call to confirm placement and timing.</li>
+          </ul>
+          <label class="bk-agree"><input type="checkbox" id="agree"> I agree to the rental terms.</label>
+        </div>
+      </div>
+      <p class="bk-error" id="formError" role="alert" hidden></p>
+    </div>
+
+    <div class="bk-ft">
+      <div class="bk-tot"><span>Rentals</span><span id="tSub">$0.00</span></div>
+      <div class="bk-tot"><span>Delivery</span><span id="tDel">From address</span></div>
+      <div class="bk-tot"><span id="tTaxLabel">Sales tax</span><span id="tTax">—</span></div>
+      <div class="bk-tot big"><span>Total</span><span id="tTotal">$0.00</span></div>
+      <div class="bk-actions">
+        <button class="btn btn-outline" id="backBtn" type="button" hidden>Back</button>
+        <button class="btn btn-gold" id="nextBtn" type="button">Checkout</button>
+      </div>
+      <div class="secure-note" style="justify-content:center">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        Secure payment by Stripe
+      </div>
+    </div>
+  </div>
+</div>
+<div class="bk-toast" id="toast" role="status" hidden></div>
+
+<!-- Order record emailed via Netlify Forms (hidden; filled in by js/book.js) -->
+<form name="booking" method="POST" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input name="bot-field"><input name="name"><input name="email"><input name="phone">
+  <input name="event-date"><input name="event-address"><input name="pay-mode">
+  <input name="items"><input name="rentals-subtotal"><input name="delivery"><input name="sales-tax"><input name="order-total"><input name="paying-now"><input name="balance-due">
+  <input name="event-type"><input name="guests"><input name="delivery-window"><input name="pickup-window"><input name="surface"><input name="power"><textarea name="notes"></textarea>
+</form>
+
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">BBH PREMIER EVENTS</div>
+      <p class="footer-about">The premium events division of Biloxi Bounce House. Tents, tables, chairs, linens and lighting. Based in Ocean Springs, MS, serving Mississippi, Alabama and the Southeast.</p>
+    </div>
+    <div class="footer-col"><div class="h">SERVICES</div><a href="weddings.html">Weddings &amp; Tents</a><a href="corporate.html">Corporate &amp; Schools</a><a href="rentals.html">Rental Catalog</a><a href="https://www.biloxibouncehouse.com">Inflatables (Biloxi Bounce House)</a></div>
+    <div class="footer-col"><div class="h">CONTACT</div><a href="tel:+12282437493">(228) 243-7493</a><a href="mailto:bobby@biloxibouncehouse.com">bobby@biloxibouncehouse.com</a><div style="line-height:1.6">106 Industrial Park Cir<br>Ocean Springs, MS 39564</div><div>Open daily 7 AM – 7 PM</div></div>
+    <div class="footer-col"><div class="h">SERVICE AREA</div><div>Based in Ocean Springs, MS</div><div>Mississippi Gulf Coast</div><div>Mobile &amp; Baldwin County, AL</div><div>Mississippi, Alabama &amp; the Southeast</div></div>
+  </div>
+  <div class="footer-bottom"><div>© <span id="year">2026</span> BBH Premier Events · A Biloxi Bounce House company</div><div>Licensed &amp; insured · [LICENSE #]</div></div>
+</footer>
+
+</body>
+</html>
