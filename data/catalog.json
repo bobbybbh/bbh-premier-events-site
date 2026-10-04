@@ -9,11 +9,11 @@
     "warehouse": { "address": "106 Industrial Park Cir, Ocean Springs, MS 39564", "lat": 30.407346977183, "lon": -88.761550606803 },
     "delivery": {
       "freeMiles": 0,
-      "ratePerMile": 0,
+      "ratePerMile": 2.50,
       "minimumFee": 0,
       "roundTrip": false,
       "maxMiles": 250,
-      "confirmed": false
+      "confirmed": true
     }
   },
   "groups": [
