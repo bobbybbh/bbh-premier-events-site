@@ -1,0 +1,4 @@
+# Local-only tools (preview server), not part of the website
+.claude/
+Thumbs.db
+desktop.ini
