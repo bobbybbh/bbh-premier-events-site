@@ -1,6 +1,8 @@
-// Back-office API: orders, payments, delivery schedule and crew access.
+// Back-office API: orders, payments, delivery schedule, inventory and crew access,
+// plus the public catalog and online checkout (which both need live inventory).
 // Uses only Web APIs (Request, Response, fetch, crypto.subtle) so the same code runs in a
 // Netlify Function and can be tested in a browser. Storage is passed in as a small key/value store.
+import { liveCatalog, publicGroups, indexGroups, cleanGroups, availability, shortages, priceCart, daysBetween, MAX_RANGE_DAYS } from './inventory.mjs';
 
 const COOKIE = 'bbh_admin';
 const SESSION_MS = { admin: 7 * 864e5, crew: 30 * 864e5 };
@@ -141,15 +143,10 @@ export function orderFromSession(s, catalogIndex) {
   });
 }
 
-function indexCatalog(catalog) {
-  const byId = {}, byName = {};
-  for (const g of (catalog && catalog.groups) || []) for (const it of g.items) { byId[it.id] = it; byName[it.name.toLowerCase()] = it; }
-  return { byId, byName };
-}
-
 // ---------- API ----------
-export function createApi({ store, env, catalog, fetchImpl = (...a) => fetch(...a), now = () => Date.now() }) {
-  const catalogIndex = indexCatalog(catalog);
+// pricing: { quoteDelivery, totals, cents } from shared.js (only needed for checkout)
+export function createBackOffice({ store, env, catalog: baseCatalog, pricing = {}, fetchImpl = (...a) => fetch(...a), now = () => Date.now() }) {
+  const S = baseCatalog.settings || {};
   const secret = env.SESSION_SECRET || `${env.ADMIN_PASSWORD}|${env.CREW_PASSWORD || ''}|bbh-admin`;
   let keyPromise;
   const hmac = async data => {
@@ -182,6 +179,27 @@ export function createApi({ store, env, catalog, fetchImpl = (...a) => fetch(...
   }
   async function saveOrder(o) { await store.set(orderKey(o.id), o); return o; }
 
+  async function getCatalog() {
+    const saved = await store.get('catalog');
+    return liveCatalog(baseCatalog, saved && saved.groups);
+  }
+  // Pending online checkouts hold their rentals until paid (then they become orders) or expired.
+  const holdKey = id => 'holds/' + id.replace(/[^A-Za-z0-9_-]/g, '');
+  async function activeHolds() {
+    const keys = await store.list('holds/');
+    const rows = await Promise.all(keys.map(k => store.get(k)));
+    const live = [];
+    await Promise.all(rows.map((h, i) => {
+      if (h && h.expires > now()) { live.push(h); return null; }
+      return store.delete(keys[i]); // tidy up expired holds
+    }));
+    return live;
+  }
+  async function availabilityFor(from, to, excludeId) {
+    const [cat, orders, holds] = await Promise.all([getCatalog(), allOrders(), activeHolds()]);
+    return availability(cat.groups, orders, holds, from, to, { excludeId, nowMs: now() });
+  }
+
   // Pull paid website checkouts from Stripe into the order list (new ones only; admin edits are never overwritten).
   async function syncStripe(force) {
     if (!env.STRIPE_SECRET_KEY) return { skipped: 'no Stripe key' };
@@ -189,6 +207,7 @@ export function createApi({ store, env, catalog, fetchImpl = (...a) => fetch(...
     if (!force && meta.at && now() - meta.at < SYNC_EVERY_MS) return { skipped: 'recent' };
     const since = meta.since ? meta.since - 86400 : 0; // 1-day overlap is harmless: existing orders are skipped
     let after = '', added = 0, newest = meta.since || 0;
+    const catalogIndex = indexGroups((await getCatalog()).groups);
     for (let page = 0; page < 20; page++) {
       const url = `https://api.stripe.com/v1/checkout/sessions?limit=100&status=complete&created[gte]=${since}` + (after ? `&starting_after=${after}` : '');
       const r = await fetchImpl(url, { headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` } });
@@ -198,9 +217,11 @@ export function createApi({ store, env, catalog, fetchImpl = (...a) => fetch(...
         newest = Math.max(newest, s.created || 0);
         if (!s.metadata || !s.metadata.event_date) continue; // not a website booking
         if (s.payment_status !== 'paid' && s.payment_status !== 'no_payment_required') continue;
-        if (await store.get(orderKey(s.id))) continue;
-        await saveOrder(orderFromSession(s, catalogIndex));
-        added++;
+        if (!(await store.get(orderKey(s.id)))) {
+          await saveOrder(orderFromSession(s, catalogIndex));
+          added++;
+        }
+        await store.delete(holdKey(s.id)); // the order now holds the rentals
       }
       if (!data.has_more || !data.data.length) break;
       after = data.data[data.data.length - 1].id;
@@ -233,7 +254,7 @@ export function createApi({ store, env, catalog, fetchImpl = (...a) => fetch(...
     return { id: 'm_' + d + '_' + r, number: 'P' + d + '-' + r };
   }
 
-  return async function handle(req) {
+  async function handle(req) {
     try {
       if (!env.ADMIN_PASSWORD) return json(503, { error: 'The admin area is not set up yet. Add ADMIN_PASSWORD in Netlify → Site configuration → Environment variables, then redeploy.' });
       const url = new URL(req.url);
@@ -303,6 +324,23 @@ export function createApi({ store, env, catalog, fetchImpl = (...a) => fetch(...
       // ----- Everything below is admin only -----
       if (role !== 'admin') return json(403, { error: 'Crew logins can only see the schedule.' });
 
+      // ----- Inventory -----
+      if (parts[0] === 'catalog' && method === 'GET') {
+        const cat = await getCatalog();
+        return json(200, { settings: cat.settings, groups: cat.groups });
+      }
+      if (parts[0] === 'catalog' && method === 'PUT') {
+        let groups;
+        try { groups = cleanGroups((await body()).groups); } catch (e) { return json(400, { error: e.message }); }
+        await store.set('catalog', { groups, updatedAt: new Date(now()).toISOString() });
+        return json(200, { settings: S, groups });
+      }
+      if (parts[0] === 'availability' && method === 'GET') {
+        const from = url.searchParams.get('from'), to = url.searchParams.get('to') || from;
+        if (!isDate(from) || !isDate(to) || to < from || daysBetween(from, to) > MAX_RANGE_DAYS) return json(400, { error: 'Bad date range' });
+        return json(200, { from, to, items: await availabilityFor(from, to, url.searchParams.get('exclude') || '') });
+      }
+
       if (parts[0] === 'orders') {
         if (!parts[1] && method === 'GET') {
           const sync = await trySync(url.searchParams.get('sync') === '1');
@@ -341,5 +379,150 @@ export function createApi({ store, env, catalog, fetchImpl = (...a) => fetch(...
       console.error(e);
       return json(500, { error: 'Something went wrong: ' + e.message });
     }
-  };
+  }
+
+  // ---------- Public: rentals for the booking page (with what's left on a date) ----------
+  async function publicCatalog(req) {
+    try {
+      const date = new URL(req.url).searchParams.get('date');
+      const cat = await getCatalog();
+      let avail = null;
+      if (isDate(date)) {
+        await trySync(false); // so very recent online bookings count
+        avail = await availabilityFor(date, date);
+      }
+      return json(200, { settings: cat.settings, groups: publicGroups(cat.groups, avail), date: isDate(date) ? date : null });
+    } catch (e) {
+      console.error(e);
+      return json(500, { error: 'Rentals could not be loaded.' });
+    }
+  }
+
+  // ---------- Public: online checkout -> Stripe ----------
+  async function checkout(req) {
+    if (req.method !== 'POST') return json(405, { error: 'Method not allowed' });
+    const key = env.STRIPE_SECRET_KEY;
+    if (!key || !S.delivery || !S.delivery.confirmed) {
+      return json(503, { error: 'Online checkout is being set up. Please call (228) 243-7493 or request a quote to book.' });
+    }
+    let b;
+    try { b = await req.json(); } catch (e) { return json(400, { error: 'Bad request' }); }
+    b = b || {};
+    const c = b.customer || {}, a = b.address || {}, d = b.details || {};
+
+    // Basic validation
+    if (!c.name || !c.email || !c.phone) return json(400, { error: 'Name, email and phone are required.' });
+    if (!/^\S+@\S+\.\S+$/.test(c.email)) return json(400, { error: 'Please enter a valid email address.' });
+    if (!a.street || !a.city || !a.state || !a.zip) return json(400, { error: 'Please enter the full event address.' });
+    if (!b.agree) return json(400, { error: 'Please agree to the rental terms.' });
+    if (!isDate(b.eventDate)) return json(400, { error: 'Please choose your event date.' });
+    const earliest = new Date(now()); earliest.setHours(0, 0, 0, 0); earliest.setDate(earliest.getDate() + S.minLeadDays);
+    if (new Date(b.eventDate + 'T12:00:00') < earliest) return json(400, { error: `Online bookings need at least ${S.minLeadDays} days' notice. Please call us for sooner dates.` });
+    const payMode = b.payMode === 'full' ? 'full' : 'deposit';
+
+    try {
+      const cat = await getCatalog();
+      const index = indexGroups(cat.groups);
+      let lines;
+      try { lines = priceCart(b.items, index); } catch (e) { return json(400, { error: e.message }); }
+
+      // Availability: count bookings paid moments ago and other checkouts in progress
+      await trySync(true);
+      const avail = await availabilityFor(b.eventDate, b.eventDate);
+      const problems = shortages(lines, avail, index);
+      if (problems.length) {
+        const left = {};
+        for (const id in avail) if (avail[id].available !== null) left[id] = Math.max(0, avail[id].available);
+        return json(409, { error: problems.join(' ') + ' Please update your cart.', available: left });
+      }
+
+      const fullAddress = `${a.street}, ${a.city}, ${a.state} ${a.zip}`;
+      const quote = await pricing.quoteDelivery(fullAddress);
+      if (!quote.ok) return json(422, { error: quote.error });
+      const t = pricing.totals(lines, quote.fee);
+      const cents = pricing.cents;
+      const money = n => '$' + n.toFixed(2);
+      const clip = (s, n = 490) => String(s == null ? '' : s).slice(0, n);
+      const dateLabel = new Date(b.eventDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
+      // Stripe Checkout Session (form-encoded REST call, no SDK needed)
+      const p = new URLSearchParams();
+      const site = env.URL || 'https://bbhpremierevents.com';
+      const expiresAt = Math.floor(now() / 1000) + 31 * 60; // Stripe minimum is 30 minutes; the hold lasts as long
+      p.append('mode', 'payment');
+      p.append('success_url', `${site}/deposit-thanks.html?session_id={CHECKOUT_SESSION_ID}`);
+      p.append('cancel_url', `${site}/book.html?canceled=1`);
+      p.append('customer_email', c.email);
+      p.append('billing_address_collection', 'required');
+      p.append('expires_at', String(expiresAt));
+
+      let i = 0;
+      const addLine = (name, amount, qty = 1, description) => {
+        p.append(`line_items[${i}][price_data][currency]`, 'usd');
+        p.append(`line_items[${i}][price_data][product_data][name]`, name);
+        if (description) p.append(`line_items[${i}][price_data][product_data][description]`, description);
+        p.append(`line_items[${i}][price_data][unit_amount]`, String(cents(amount)));
+        p.append(`line_items[${i}][quantity]`, String(qty));
+        i++;
+      };
+      if (payMode === 'full') {
+        for (const l of lines) addLine(l.name, l.price, l.qty);
+        if (t.delivery > 0) addLine(`Delivery, setup & pickup (${Math.round(quote.miles)} mi)`, t.delivery);
+        if (t.tax > 0) addLine(`Sales tax (${S.taxRatePercent}%)`, t.tax);
+      } else {
+        addLine(`Deposit — Rental order for ${dateLabel}`, t.deposit, 1,
+          `Order total ${money(t.total)}. Remaining balance ${money(t.balance)} due ${S.balanceDueDays} days before your event. Deposits are non-refundable.`);
+      }
+
+      const itemsText = lines.map(l => `${l.qty}x ${l.name}`).join('; ');
+      const meta = {
+        event_date: b.eventDate, pay_mode: payMode, customer_name: c.name, phone: c.phone,
+        event_address: fullAddress, miles: String(quote.miles),
+        items_subtotal: money(t.subtotal), delivery_fee: money(t.delivery), sales_tax: money(t.tax),
+        order_total: money(t.total), paid_now: money(payMode === 'full' ? t.total : t.deposit),
+        balance_due: money(payMode === 'full' ? 0 : t.balance),
+        event_type: d.eventType, guests: d.guests, delivery_window: d.deliveryWindow, pickup_window: d.pickupWindow,
+        surface: d.surface, power: d.power, items: itemsText, notes: d.notes
+      };
+      // Exact item ids for the admin order list, split so each value stays under Stripe's 500-character limit
+      let chunk = '', n = 0;
+      for (const pair of lines.map(l => `${l.id}:${l.qty}`)) {
+        if (chunk && chunk.length + pair.length + 1 > 480) { meta['cart_' + (++n)] = chunk; chunk = ''; }
+        if (n >= 8) break;
+        chunk += (chunk ? ',' : '') + pair;
+      }
+      if (chunk) meta['cart_' + (++n)] = chunk;
+      for (const [k, v] of Object.entries(meta)) {
+        if (v == null || v === '') continue;
+        p.append(`metadata[${k}]`, clip(v));
+        p.append(`payment_intent_data[metadata][${k}]`, clip(v));
+      }
+      p.append('payment_intent_data[description]', clip(`BBH Premier — ${dateLabel} — ${c.name} — ${payMode === 'full' ? 'paid in full' : 'deposit'}`));
+
+      const r = await fetchImpl('https://api.stripe.com/v1/checkout/sessions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: p.toString()
+      });
+      const session = await r.json();
+      if (!r.ok) {
+        console.error('Stripe error', session && session.error && session.error.message);
+        return json(502, { error: 'Payment page could not be opened. Please try again or call (228) 243-7493.' });
+      }
+      // Hold the rentals while the customer pays
+      await store.set(holdKey(session.id), {
+        id: session.id, from: b.eventDate, to: b.eventDate, expires: expiresAt * 1000,
+        items: lines.map(l => ({ id: l.id, qty: l.qty }))
+      });
+      return json(200, { url: session.url, totals: t });
+    } catch (e) {
+      console.error(e);
+      return json(500, { error: 'Something went wrong opening checkout. Please try again or call (228) 243-7493.' });
+    }
+  }
+
+  return { handle, publicCatalog, checkout, getCatalog, syncStripe: trySync };
 }
+
+// Kept for the admin function and the local test bench
+export const createApi = opts => createBackOffice(opts).handle;

@@ -1,10 +1,8 @@
-// Shared pricing logic for the booking functions.
-// Prices and settings live in data/catalog.json so the server never trusts prices sent by the browser.
+// Shared delivery and totals logic for the booking functions.
+// Settings live in data/catalog.json; rental prices come from the live inventory (see inventory.mjs).
 const catalog = require('../../data/catalog.json');
 
 const S = catalog.settings;
-const ITEMS = {};
-for (const g of catalog.groups) for (const it of g.items) ITEMS[it.id] = it;
 
 const round2 = n => Math.round(n * 100) / 100;
 const cents = n => Math.round(n * 100);
@@ -58,20 +56,6 @@ async function quoteDelivery(address) {
   return { ok: true, miles, fee: deliveryFee(miles), matched: geo.matched };
 }
 
-// Validates the cart against the catalog and returns priced lines.
-function priceCart(items) {
-  if (!Array.isArray(items) || !items.length) throw new Error('Your cart is empty.');
-  const lines = [];
-  for (const { id, qty } of items) {
-    const it = ITEMS[id];
-    const q = Number(qty);
-    if (!it) throw new Error('An item in your cart is no longer available. Please refresh the page.');
-    if (!Number.isInteger(q) || q < 1 || q > 1000) throw new Error('Invalid quantity for ' + it.name + '.');
-    lines.push({ id, name: it.name, price: it.price, qty: q, total: round2(it.price * q) });
-  }
-  return lines;
-}
-
 function totals(lines, delivery) {
   const subtotal = round2(lines.reduce((a, l) => a + l.total, 0));
   const taxable = subtotal + (S.taxDelivery ? delivery : 0);
@@ -81,4 +65,4 @@ function totals(lines, delivery) {
   return { subtotal, delivery, tax, total, deposit, balance: round2(total - deposit) };
 }
 
-module.exports = { catalog, S, ITEMS, round2, cents, json, quoteDelivery, priceCart, totals };
+module.exports = { catalog, S, round2, cents, json, quoteDelivery, totals };

@@ -360,6 +360,10 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .bk-qty.sm button { width: 34px; height: 36px; }
 .bk-qty.sm span { min-width: 28px; text-align: center; }
 .bk-addbtn { padding: 0 18px; height: 46px; }
+.bk-addbtn:disabled { background: transparent; color: var(--muted); border-color: var(--line-strong); cursor: default; }
+.bk-avail { font-size: 13px; color: var(--gold-light); }
+.bk-avail.out { color: #E8968C; }
+.bk-out .bk-name, .bk-out .bk-price { opacity: .55; }
 
 .bk-drawer { position: fixed; inset: 0; z-index: 100; background: rgba(5, 10, 30, 0.72); }
 .bk-drawer[hidden] { display: none; }

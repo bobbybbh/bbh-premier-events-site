@@ -27,6 +27,7 @@
   let role = null, orders = null, catalog = { groups: [], settings: {} }, S = {};
   let filter = 'upcoming', current = null, dirty = false;
   let schDate = today(), schMode = 'day', stops = [];
+  let currentView = '', invGroups = null, invAvail = {}, invDirty = false, invDate = today(), invOpen = '';
 
   function toast(msg) {
     const t = $('#toast'); t.textContent = msg; t.hidden = false;
@@ -57,6 +58,7 @@
     $('#login').hidden = true; $('#app').hidden = false;
     $('#roleLabel').textContent = role === 'admin' ? 'Owner' : 'Crew';
     $$('[data-admin]').forEach(el => { el.hidden = role !== 'admin'; });
+    if (role === 'admin') loadCatalog().catch(() => { /* falls back to the catalog file */ });
     route();
   }
   $('#loginForm').addEventListener('submit', async e => {
@@ -73,14 +75,20 @@
 
   // ---------- Routing ----------
   function route() {
-    const views = role === 'admin' ? ['orders', 'schedule', 'reports'] : ['schedule'];
+    const views = role === 'admin' ? ['orders', 'schedule', 'inventory', 'reports'] : ['schedule'];
     let v = location.hash.slice(1);
     if (!views.includes(v)) v = views[0];
+    if (v !== 'inventory' && invDirty && currentView === 'inventory') {
+      if (!confirm('You have unsaved inventory changes. Leave without saving?')) { history.replaceState(null, '', '#inventory'); return; }
+      invDirty = false; invGroups = null;
+    }
+    currentView = v;
     $$('.view').forEach(s => { s.hidden = s.id !== 'view-' + v; });
     $$('#tabs a').forEach(a => a.classList.toggle('on', a.dataset.view === v));
     if (v === 'orders') ensureOrders().then(renderOrders);
     if (v === 'schedule') loadSchedule();
     if (v === 'reports') ensureOrders().then(renderReports);
+    if (v === 'inventory') loadInventory();
   }
   window.addEventListener('hashchange', () => { if (role) route(); });
 
@@ -174,7 +182,7 @@
 
   function fillCatalogSelect() {
     $('#edAddItem').innerHTML = '<option value="">+ Add rental from catalog…</option>' + catalog.groups.map(g =>
-      `<optgroup label="${esc(g.name)}">${g.items.map(it => `<option value="${esc(it.id)}">${esc(it.name)} — ${money(it.price)}</option>`).join('')}</optgroup>`).join('');
+      `<optgroup label="${esc(g.name)}">${g.items.map(it => `<option value="${esc(it.id)}">${esc(it.name)} — ${money(it.price)}${it.hidden ? ' (not on website)' : ''}</option>`).join('')}</optgroup>`).join('');
   }
 
   function openEditor(o) {
@@ -192,6 +200,7 @@
     $('#edDelete').hidden = isNew || current.source === 'online';
     $('#edErr').hidden = true;
     $('#payDate').value = today(); $('#payAmount').value = ''; $('#payNote').value = '';
+    $('#edAvail').hidden = true;
     renderItems(); renderPayments(); renderDone(); updateMap(); moneyNote();
     $('#edHistory').innerHTML = (current.history || []).slice().reverse().map(h => `<li>${esc(fmtStamp(h.at))} — ${esc(h.what)} <span class="muted">(${esc(h.by)})</span></li>`).join('');
     $('#edHistoryWrap').hidden = isNew;
@@ -249,16 +258,44 @@
       moneyNote();
     }
     if (k === 'event.address') updateMap();
+    if (/\.(date|endDate)$/.test(k)) checkAvail();
   });
   $('#edForm').addEventListener('change', e => {
     // Tidy money inputs once the user leaves them
     if (e.target.matches('[data-num]')) e.target.value = num(e.target.value).toFixed(2);
   });
-  $('#edStatus').addEventListener('change', e => { current.status = e.target.value; dirty = true; });
+  $('#edStatus').addEventListener('change', e => { current.status = e.target.value; dirty = true; checkAvail(); });
   function updateMap() { const a = current.event.address; $('#edMap').hidden = !a; if (a) $('#edMap').href = mapsLink(a); }
 
   // Rentals
+  // Warn (don't block) when this order would use more of something than is free on its dates
+  function checkAvail() {
+    clearTimeout(checkAvail.t);
+    checkAvail.t = setTimeout(async () => {
+      const box = $('#edAvail');
+      if (!current) return;
+      const ev = current.event || {}, from = current.delivery.date || ev.date;
+      let to = current.pickup.date || ev.endDate || ev.date;
+      const need = {};
+      current.items.forEach(i => { if (i.id) need[i.id] = (need[i.id] || 0) + i.qty; });
+      if (!from || !Object.keys(need).length || current.status === 'canceled') { box.hidden = true; return; }
+      if (!to || to < from) to = from;
+      try {
+        const res = await api(`availability?from=${from}&to=${to}&exclude=${encodeURIComponent(current.id || '')}`);
+        const msgs = Object.keys(need).filter(id => res.items[id] && res.items[id].available !== null && need[id] > res.items[id].available).map(id => {
+          const a = res.items[id], name = (current.items.find(i => i.id === id) || {}).name || id;
+          const others = a.holders.filter(h => !h.pending).map(h => h.number).join(', ');
+          return `<li><b>${esc(name)}</b>: this order needs ${need[id]}, only ${Math.max(0, a.available)} of ${a.owned} free${others ? ` (also on ${esc(others)})` : ''}</li>`;
+        });
+        const span = from === to ? fmtDate(from) : fmtDate(from) + ' – ' + fmtDate(to);
+        box.innerHTML = msgs.length ? `<b>⚠ Not enough on hand ${esc(span)}${current.status === 'quote' ? ' (if this quote is booked)' : ''}:</b><ul>${msgs.join('')}</ul>` : '';
+        box.hidden = !msgs.length;
+      } catch (e) { box.hidden = true; }
+    }, 350);
+  }
+
   function renderItems() {
+    checkAvail();
     $('#edItems').innerHTML = (current.items.length ? `<div class="irow ihead"><span>Rental</span><span>Qty</span><span>Price each</span><span class="lt">Line total</span><span></span></div>` : '') +
       current.items.map((it, i) => `<div class="irow" data-i="${i}">
         <input data-f="name" value="${esc(it.name)}" placeholder="Description" aria-label="Rental name">
@@ -276,6 +313,7 @@
     if (f === 'price') it.price = e.target.value.trim() === '' ? null : num(e.target.value);
     row.querySelector('.lt').textContent = it.price == null ? '—' : money(it.qty * it.price);
     recalc('items');
+    if (f === 'qty') checkAvail();
   });
   $('#edItems').addEventListener('click', e => {
     const b = e.target.closest('.rm'); if (!b) return;
@@ -467,6 +505,153 @@
     schMode = b.dataset.m; $$('#schMode button').forEach(x => x.classList.toggle('on', x === b)); loadSchedule();
   });
   $('#printBtn').addEventListener('click', () => window.print());
+
+  // ---------- Inventory ----------
+  async function loadCatalog() {
+    const data = await api('catalog');
+    catalog = data; S = data.settings || S;
+    fillCatalogSelect();
+    return data;
+  }
+  async function loadInventory() {
+    $('#invDate').value = invDate;
+    try {
+      if (!invGroups) invGroups = clone((await loadCatalog()).groups);
+      renderInventory();
+      await loadInvAvail();
+    } catch (e) { $('#invList').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+  }
+  async function loadInvAvail() {
+    try { invAvail = (await api(`availability?from=${invDate}&to=${invDate}`)).items; } catch (e) { invAvail = {}; toast(e.message); }
+    $$('#invList tr[data-i]').forEach(tr => updateAvailCell(tr));
+    renderHolders();
+  }
+  function setInvDirty(on) { invDirty = on; $('#invDirty').hidden = !on; }
+  const itemAt = tr => invGroups[tr.closest('[data-g]').dataset.g].items[tr.dataset.i];
+
+  function availBadge(it) {
+    if (it.qty === null || it.qty === undefined || it.qty === '') return '<span class="muted small">not counted</span>';
+    const a = invAvail[it.id];
+    const booked = a ? a.booked : 0, free = it.qty - booked;
+    const cls = free <= 0 ? 'b-overdue' : free <= Math.max(1, Math.round(it.qty * 0.2)) ? 'b-due' : 'b-paid';
+    return `<button type="button" class="badge ${cls} avail-btn" data-holders="${esc(it.id)}" title="${booked} booked">${free < 0 ? 'Overbooked by ' + (-free) : free + ' of ' + it.qty + ' free'}</button>`;
+  }
+  function updateAvailCell(tr) { const it = itemAt(tr); if (it) tr.querySelector('.av').innerHTML = availBadge(it); }
+
+  function renderInventory() {
+    const q = $('#invSearch').value.trim().toLowerCase();
+    const cats = [...new Set(invGroups.map(g => g.cat).filter(Boolean))];
+    $('#invCats').innerHTML = cats.map(c => `<option value="${esc(c)}">`).join('');
+    const dateLbl = fmtDate(invDate, { month: 'short', day: 'numeric' });
+    $('#invList').innerHTML = invGroups.map((g, gi) => {
+      const rows = g.items.map((it, i) => ({ it, i })).filter(({ it }) => !q || (g.name + ' ' + it.name + ' ' + (it.desc || '')).toLowerCase().includes(q));
+      if (q && !rows.length) return '';
+      return `<div class="panel inv-group" data-g="${gi}">
+        <div class="row inv-ghead">
+          <label class="field"><span>Group</span><input data-gf="name" value="${esc(g.name)}"></label>
+          <label class="field sm2"><span>Category</span><input data-gf="cat" list="invCats" value="${esc(g.cat)}"></label>
+          <label class="field grow2"><span>Shown under the group name</span><input data-gf="sub" value="${esc(g.sub || '')}"></label>
+          <button type="button" class="btn btn-danger btn-sm" data-delgroup ${g.items.length ? 'hidden' : ''}>Delete group</button>
+        </div>
+        <div class="table-wrap"><table class="inv-table"><thead><tr><th>Rental</th><th>Description</th><th class="n">Price</th><th class="n">Owned</th><th>${esc(dateLbl)}</th><th>On website</th><th></th></tr></thead><tbody>
+        ${rows.map(({ it, i }) => `<tr data-i="${i}"${it.hidden ? ' class="hid"' : ''}>
+          <td><input data-f="name" value="${esc(it.name)}" aria-label="Rental name"></td>
+          <td><input data-f="desc" value="${esc(it.desc || '')}" aria-label="Description"></td>
+          <td class="n"><input data-f="price" class="num" value="${Number(it.price).toFixed(2)}" inputmode="decimal" aria-label="Price"></td>
+          <td class="n"><input data-f="qty" class="num sm" value="${it.qty === null || it.qty === undefined ? '' : it.qty}" inputmode="numeric" placeholder="—" aria-label="Quantity owned"></td>
+          <td class="av">${availBadge(it)}</td>
+          <td><input type="checkbox" data-f="shown" ${it.hidden ? '' : 'checked'} aria-label="Show on website"></td>
+          <td><button type="button" class="rm" data-delitem aria-label="Delete ${esc(it.name)}">×</button></td>
+        </tr>`).join('')}
+        </tbody></table></div>
+        <button type="button" class="btn btn-outline btn-sm" data-additem>+ Add rental</button>
+      </div>`;
+    }).join('') || '<div class="empty">No rentals match.</div>';
+    renderHolders();
+  }
+
+  // Expandable "who has it" list under an item
+  function renderHolders() {
+    $$('#invList tr.holders').forEach(r => r.remove());
+    if (!invOpen) return;
+    const tr = $$('#invList tr[data-i]').find(r => itemAt(r).id === invOpen);
+    if (!tr) return;
+    const h = (invAvail[invOpen] || {}).holders || [];
+    const row = document.createElement('tr'); row.className = 'holders';
+    row.innerHTML = `<td colspan="7">${h.length ? h.map(x => x.pending
+      ? `<div class="muted">${x.qty} in an online checkout in progress</div>`
+      : `<div><button type="button" class="link" data-openorder="${esc(x.orderId)}">${esc(x.number)}</button> · ${esc(x.name)} · ${x.qty} · ${esc(fmtDate(x.from, { month: 'short', day: 'numeric' }))}${x.to !== x.from ? '–' + esc(fmtDate(x.to, { month: 'short', day: 'numeric' })) : ''} <span class="muted">(${esc(STATUS[x.status] || x.status)})</span></div>`).join('')
+      : '<span class="muted">Not on any orders this day.</span>'}</td>`;
+    tr.after(row);
+  }
+
+  $('#invList').addEventListener('input', e => {
+    const t = e.target;
+    if (t.dataset.gf) { invGroups[t.closest('[data-g]').dataset.g][t.dataset.gf] = t.value; setInvDirty(true); return; }
+    const tr = t.closest('tr[data-i]'); if (!tr || !t.dataset.f) return;
+    const it = itemAt(tr);
+    if (t.dataset.f === 'shown') { it.hidden = !t.checked; tr.classList.toggle('hid', it.hidden); }
+    else if (t.dataset.f === 'price') it.price = num(t.value);
+    else if (t.dataset.f === 'qty') { const v = t.value.trim(); it.qty = v === '' ? null : Math.max(0, parseInt(v, 10) || 0); updateAvailCell(tr); }
+    else it[t.dataset.f] = t.value;
+    setInvDirty(true);
+  });
+  $('#invList').addEventListener('change', e => { if (e.target.dataset.f === 'price') e.target.value = num(e.target.value).toFixed(2); });
+  $('#invList').addEventListener('click', async e => {
+    const t = e.target;
+    const g = t.closest('[data-g]') ? invGroups[t.closest('[data-g]').dataset.g] : null;
+    if (t.closest('[data-additem]')) {
+      g.items.push({ id: '', name: '', desc: '', price: 0, qty: null, hidden: false });
+      setInvDirty(true); renderInventory();
+      $(`#invList [data-g="${t.closest('[data-g]').dataset.g}"] tr[data-i]:last-child input`).focus();
+    } else if (t.closest('[data-delitem]')) {
+      const it = itemAt(t.closest('tr'));
+      if (it.id && !confirm(`Delete "${it.name}"? Past orders keep their record. (To stop offering it for now, uncheck "On website" instead.)`)) return;
+      g.items.splice(t.closest('tr').dataset.i, 1); setInvDirty(true); renderInventory();
+    } else if (t.closest('[data-delgroup]')) {
+      invGroups.splice(t.closest('[data-g]').dataset.g, 1); setInvDirty(true); renderInventory();
+    } else if (t.closest('[data-holders]')) {
+      const id = t.closest('[data-holders]').dataset.holders;
+      invOpen = invOpen === id ? '' : id; renderHolders();
+    } else if (t.closest('[data-openorder]')) {
+      await ensureOrders();
+      const o = orders.find(x => x.id === t.closest('[data-openorder]').dataset.openorder);
+      if (o) openEditor(o);
+    }
+  });
+  $('#invAddGroup').addEventListener('click', () => {
+    invGroups.push({ cat: (invGroups[invGroups.length - 1] || {}).cat || 'Other', name: 'New group', sub: '', items: [{ id: '', name: '', desc: '', price: 0, qty: null, hidden: false }] });
+    setInvDirty(true); renderInventory();
+    const last = $$('#invList .inv-group').pop(); last.scrollIntoView({ behavior: 'smooth' }); $('input[data-gf="name"]', last).select();
+  });
+  $('#invSearch').addEventListener('input', renderInventory);
+  $('#invDate').addEventListener('change', e => { if (e.target.value) { invDate = e.target.value; renderInventory(); loadInvAvail(); } });
+
+  // New items get a permanent id from their name (ids link orders to rentals, so they never change)
+  function assignIds() {
+    const used = new Set();
+    invGroups.forEach(g => g.items.forEach(it => { if (it.id) used.add(it.id); }));
+    invGroups.forEach(g => g.items.forEach(it => {
+      if (it.id) return;
+      const base = (it.name || 'item').toLowerCase().replace(/×/g, 'x').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50) || 'item';
+      let id = base, n = 2;
+      while (used.has(id)) id = base + '-' + n++;
+      used.add(id); it.id = id;
+    }));
+  }
+  $('#invSave').addEventListener('click', async () => {
+    const b = $('#invSave'); b.disabled = true;
+    invGroups.forEach(g => { g.items = g.items.filter(it => it.id || (it.name || '').trim()); });
+    assignIds();
+    try {
+      const res = await api('catalog', { method: 'PUT', body: { groups: invGroups } });
+      catalog = res; S = res.settings || S; invGroups = clone(res.groups);
+      fillCatalogSelect(); setInvDirty(false); renderInventory(); await loadInvAvail();
+      toast('Inventory saved — the booking page is updated');
+    } catch (ex) { toast(ex.message); }
+    b.disabled = false;
+  });
+  window.addEventListener('beforeunload', e => { if (invDirty) { e.preventDefault(); e.returnValue = ''; } });
 
   // ---------- Reports ----------
   function presetRange(p) {

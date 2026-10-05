@@ -31,6 +31,7 @@
     <nav class="tabs" id="tabs">
       <a href="#orders" data-view="orders" data-admin>Orders</a>
       <a href="#schedule" data-view="schedule">Schedule</a>
+      <a href="#inventory" data-view="inventory" data-admin>Inventory</a>
       <a href="#reports" data-view="reports" data-admin>Reports</a>
     </nav>
     <div class="who"><span id="roleLabel" class="muted small"></span><button class="link" id="logoutBtn" type="button">Log out</button></div>
@@ -77,6 +78,21 @@
     </div>
     <h2 class="sch-title" id="schTitle"></h2>
     <div id="schList"></div>
+  </section>
+
+  <!-- Inventory -->
+  <section class="view" id="view-inventory" hidden>
+    <div class="toolbar">
+      <label class="inline">Availability on <input type="date" id="invDate"></label>
+      <input type="search" id="invSearch" placeholder="Search rentals" aria-label="Search rentals">
+      <div class="spacer"></div>
+      <span class="unsaved" id="invDirty" hidden>Unsaved changes</span>
+      <button class="btn btn-outline btn-sm" id="invAddGroup" type="button">+ Add group</button>
+      <button class="btn btn-gold btn-sm" id="invSave" type="button">Save changes</button>
+    </div>
+    <p class="muted small inv-help"><b>Owned</b> is how many you have. Leave it blank for things you don't need to count. Unchecking <b>On website</b> hides an item from online booking (you can still put it on orders by hand). Prices are what online customers pay. Click an availability badge to see which orders have the item.</p>
+    <datalist id="invCats"></datalist>
+    <div id="invList"></div>
   </section>
 
   <!-- Reports -->
@@ -171,6 +187,7 @@
       <fieldset>
         <legend>Rentals</legend>
         <div class="items" id="edItems"></div>
+        <div class="avail-warn" id="edAvail" hidden></div>
         <div class="row">
           <select id="edAddItem" aria-label="Add a rental from the catalog"><option value="">+ Add rental from catalog…</option></select>
           <button class="btn btn-outline btn-sm" type="button" id="edAddCustom">+ Custom line</button>

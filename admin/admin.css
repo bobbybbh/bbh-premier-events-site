@@ -154,6 +154,28 @@ tfoot td { font-weight: 500; border-bottom: 0; }
 .chart text { fill: var(--muted); font-size: 12px; font-family: var(--sans); }
 .tip { position: absolute; pointer-events: none; background: var(--cream); color: var(--navy); padding: 6px 10px; border-radius: 6px; font-size: 13px; white-space: nowrap; transform: translate(-50%, -100%); margin-top: -8px; }
 
+/* Inventory */
+.inv-help { max-width: 900px; line-height: 1.5; }
+.unsaved { color: var(--warn); font-size: 13px; font-weight: 500; }
+.inv-group { padding-bottom: 14px; }
+.inv-ghead .field.sm2 { flex: 0 0 160px; min-width: 140px; }
+.inv-ghead .field.grow2 { flex: 2 1 260px; }
+.inv-table { margin-bottom: 12px; }
+.inv-table th, .inv-table td { padding: 6px; vertical-align: middle; }
+.inv-table td:first-child { min-width: 220px; }
+.inv-table td:nth-child(2) { min-width: 200px; }
+.inv-table input { padding: 7px 8px; }
+.inv-table input.num { width: 96px; text-align: right; }
+.inv-table input.num.sm { width: 70px; }
+.inv-table input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--gold); }
+.inv-table tr.hid td:not(:nth-child(6)) { opacity: .5; }
+.inv-table .rm { background: none; border: 0; color: var(--muted); font-size: 20px; cursor: pointer; }
+.inv-table .rm:hover { color: var(--bad); }
+.avail-btn { background: none; cursor: pointer; font: inherit; font-size: 12px; }
+.inv-table tr.holders td { background: var(--card-2); white-space: normal; font-size: 13px; line-height: 1.8; padding: 8px 14px; }
+.avail-warn { margin: 0 0 12px; padding: 10px 14px; border-radius: 6px; background: rgba(224,107,95,.1); border: 1px solid rgba(224,107,95,.45); font-size: 14px; }
+.avail-warn ul { margin: 6px 0 0; padding-left: 18px; }
+
 /* Order editor */
 .modal { position: fixed; inset: 0; background: rgba(5, 9, 25, .75); z-index: 20; display: flex; justify-content: center; align-items: flex-start; padding: 24px 16px; overflow-y: auto; }
 .modal-card { width: 100%; max-width: 980px; background: var(--card); border: 1px solid var(--line-strong); border-radius: 12px; display: flex; flex-direction: column; }
