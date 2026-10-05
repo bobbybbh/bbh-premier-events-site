@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /thank-you.html
 Disallow: /deposit-thanks.html
+Disallow: /admin/
 
 Sitemap: https://bbhpremierevents.com/sitemap.xml

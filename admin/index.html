@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin | BBH Premier Events</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/images/logo.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/admin/admin.css">
+<script src="/admin/admin.js" defer></script>
+</head>
+<body>
+
+<!-- Login -->
+<main id="login" class="login" hidden>
+  <form id="loginForm" class="login-card">
+    <img src="/images/logo.png" alt="BBH Premier Events" class="login-logo">
+    <h1>Back Office</h1>
+    <label class="field"><span>Password</span><input type="password" id="loginPw" autocomplete="current-password" required></label>
+    <p class="err" id="loginErr" hidden></p>
+    <button class="btn btn-gold" type="submit">Log in</button>
+    <p class="muted small">Owner and crew each have their own password.</p>
+  </form>
+</main>
+
+<!-- App -->
+<div id="app" hidden>
+  <header class="topbar">
+    <a href="#orders" class="brand"><img src="/images/logo.png" alt=""><span>Back Office</span></a>
+    <nav class="tabs" id="tabs">
+      <a href="#orders" data-view="orders" data-admin>Orders</a>
+      <a href="#schedule" data-view="schedule">Schedule</a>
+      <a href="#reports" data-view="reports" data-admin>Reports</a>
+    </nav>
+    <div class="who"><span id="roleLabel" class="muted small"></span><button class="link" id="logoutBtn" type="button">Log out</button></div>
+  </header>
+
+  <div class="notice" id="notice" hidden></div>
+
+  <!-- Orders -->
+  <section class="view" id="view-orders" hidden>
+    <div class="toolbar">
+      <input type="search" id="orderSearch" placeholder="Search name, phone, order #, address" aria-label="Search orders">
+      <div class="chips" id="orderFilters" role="group" aria-label="Filter orders">
+        <button data-f="upcoming" class="on">Upcoming</button>
+        <button data-f="quote">Quotes</button>
+        <button data-f="balance">Balance due</button>
+        <button data-f="past">Past</button>
+        <button data-f="canceled">Canceled</button>
+        <button data-f="all">All</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-outline btn-sm" id="syncBtn" type="button" title="Check Stripe for new online bookings">Check for new bookings</button>
+      <button class="btn btn-gold btn-sm" id="newOrderBtn" type="button">+ New order</button>
+    </div>
+    <p class="muted small" id="orderCount"></p>
+    <div class="order-list" id="orderList"></div>
+  </section>
+
+  <!-- Schedule -->
+  <section class="view" id="view-schedule" hidden>
+    <div class="toolbar">
+      <div class="datenav">
+        <button class="btn btn-outline btn-sm" id="schPrev" type="button" aria-label="Previous">‹</button>
+        <input type="date" id="schDate" aria-label="Date">
+        <button class="btn btn-outline btn-sm" id="schNext" type="button" aria-label="Next">›</button>
+        <button class="btn btn-outline btn-sm" id="schToday" type="button">Today</button>
+      </div>
+      <div class="chips" id="schMode" role="group" aria-label="Schedule view">
+        <button data-m="day" class="on">Day</button>
+        <button data-m="week">Week</button>
+      </div>
+      <div class="spacer"></div>
+      <a class="btn btn-outline btn-sm" id="routeBtn" target="_blank" rel="noopener">Map route</a>
+      <button class="btn btn-outline btn-sm" id="printBtn" type="button">Print run sheet</button>
+    </div>
+    <h2 class="sch-title" id="schTitle"></h2>
+    <div id="schList"></div>
+  </section>
+
+  <!-- Reports -->
+  <section class="view" id="view-reports" hidden>
+    <div class="toolbar">
+      <label class="inline">Period
+        <select id="rpPreset">
+          <option value="thisMonth">This month</option>
+          <option value="lastMonth">Last month</option>
+          <option value="next30">Next 30 days</option>
+          <option value="thisYear" selected>This year</option>
+          <option value="lastYear">Last year</option>
+          <option value="last12">Last 12 months</option>
+          <option value="custom">Custom…</option>
+        </select>
+      </label>
+      <label class="inline">From <input type="date" id="rpFrom"></label>
+      <label class="inline">To <input type="date" id="rpTo"></label>
+      <div class="spacer"></div>
+      <button class="btn btn-outline btn-sm" id="csvBtn" type="button">Export CSV</button>
+    </div>
+    <p class="muted small">Based on event date. Quotes and canceled orders are left out of the money totals.</p>
+    <div class="kpis" id="kpis"></div>
+    <div class="panel">
+      <h3>Revenue by month</h3>
+      <div id="chart" class="chart"></div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Month by month <span class="muted small">(sales tax filing)</span></h3>
+        <div class="table-wrap" id="monthTable"></div>
+      </div>
+      <div class="panel">
+        <h3>Top rentals</h3>
+        <div class="table-wrap" id="itemTable"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Balances still owed <span class="muted small">(all dates)</span></h3>
+      <div class="table-wrap" id="balanceTable"></div>
+    </div>
+  </section>
+</div>
+
+<!-- Order editor -->
+<div class="modal" id="editor" hidden role="dialog" aria-modal="true" aria-labelledby="edTitle">
+  <form class="modal-card" id="edForm" novalidate>
+    <div class="modal-head">
+      <div>
+        <h2 id="edTitle">New order</h2>
+        <span class="muted small" id="edSub"></span>
+      </div>
+      <label class="inline">Status
+        <select id="edStatus">
+          <option value="quote">Quote</option>
+          <option value="booked">Booked</option>
+          <option value="delivered">Out on site</option>
+          <option value="completed">Completed</option>
+          <option value="canceled">Canceled</option>
+        </select>
+      </label>
+      <button class="x" type="button" data-close aria-label="Close">×</button>
+    </div>
+
+    <div class="modal-body">
+      <fieldset>
+        <legend>Customer</legend>
+        <div class="row">
+          <label class="field"><span>Name</span><input data-k="customer.name" required></label>
+          <label class="field"><span>Phone</span><input data-k="customer.phone" type="tel"></label>
+        </div>
+        <div class="row">
+          <label class="field"><span>Email</span><input data-k="customer.email" type="email"></label>
+          <label class="field"><span>Company / school</span><input data-k="customer.company"></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Event</legend>
+        <div class="row">
+          <label class="field"><span>Event date</span><input data-k="event.date" type="date" required></label>
+          <label class="field"><span>End date (multi-day)</span><input data-k="event.endDate" type="date"></label>
+          <label class="field"><span>Event type</span><input data-k="event.type" list="eventTypes"></label>
+          <label class="field sm"><span>Guests</span><input data-k="event.guests"></label>
+        </div>
+        <div class="row">
+          <label class="field grow"><span>Event address <a href="#" id="edMap" target="_blank" rel="noopener" class="small">map</a></span><input data-k="event.address"></label>
+        </div>
+        <datalist id="eventTypes"><option>Wedding</option><option>Birthday</option><option>Corporate</option><option>School</option><option>Church</option><option>Festival</option><option>Graduation</option><option>Other</option></datalist>
+      </fieldset>
+
+      <fieldset>
+        <legend>Rentals</legend>
+        <div class="items" id="edItems"></div>
+        <div class="row">
+          <select id="edAddItem" aria-label="Add a rental from the catalog"><option value="">+ Add rental from catalog…</option></select>
+          <button class="btn btn-outline btn-sm" type="button" id="edAddCustom">+ Custom line</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Money</legend>
+        <div class="money">
+          <label class="field"><span>Rentals subtotal</span><input data-k="money.subtotal" data-num inputmode="decimal"></label>
+          <label class="field"><span>Discount</span><input data-k="money.discount" data-num inputmode="decimal"></label>
+          <label class="field"><span>Delivery fee <button type="button" class="link small" id="edCalcDelivery">calculate</button></span><input data-k="money.delivery" data-num inputmode="decimal"></label>
+          <label class="field"><span>Sales tax</span><input data-k="money.tax" data-num inputmode="decimal"></label>
+          <label class="field total"><span>Order total</span><input data-k="money.total" data-num inputmode="decimal"></label>
+        </div>
+        <p class="muted small" id="edMoneyNote"></p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Payments</legend>
+        <div id="edPayments"></div>
+        <div class="row pay-add">
+          <input type="date" id="payDate" aria-label="Payment date">
+          <input id="payAmount" inputmode="decimal" placeholder="Amount" aria-label="Payment amount">
+          <select id="payMethod" aria-label="Payment method"><option>Cash</option><option>Check</option><option>Card</option><option>Venmo</option><option>Zelle</option><option>Cash App</option><option>Purchase order</option><option>Refund</option><option>Other</option></select>
+          <input id="payNote" placeholder="Note (check #, etc.)" aria-label="Payment note">
+          <button class="btn btn-outline btn-sm" type="button" id="payAdd">Add payment</button>
+        </div>
+        <p class="paysum" id="edPaySum"></p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Delivery &amp; pickup</legend>
+        <div class="grid2">
+          <div>
+            <h4>Delivery / setup <span class="done-tag" id="edDelDone"></span></h4>
+            <div class="row">
+              <label class="field"><span>Date</span><input data-k="delivery.date" type="date"></label>
+              <label class="field"><span>Time window</span><input data-k="delivery.window" placeholder="e.g. 8–10 AM"></label>
+            </div>
+            <div class="row">
+              <label class="field"><span>Crew</span><input data-k="delivery.crew"></label>
+              <label class="field"><span>Truck</span><input data-k="delivery.truck"></label>
+            </div>
+            <label class="field"><span>Crew notes</span><textarea data-k="delivery.notes" rows="2"></textarea></label>
+          </div>
+          <div>
+            <h4>Pickup / teardown <span class="done-tag" id="edPickDone"></span></h4>
+            <div class="row">
+              <label class="field"><span>Date</span><input data-k="pickup.date" type="date"></label>
+              <label class="field"><span>Time window</span><input data-k="pickup.window" placeholder="e.g. after 9 PM"></label>
+            </div>
+            <div class="row">
+              <label class="field"><span>Crew</span><input data-k="pickup.crew"></label>
+              <label class="field"><span>Truck</span><input data-k="pickup.truck"></label>
+            </div>
+            <label class="field"><span>Crew notes</span><textarea data-k="pickup.notes" rows="2"></textarea></label>
+          </div>
+        </div>
+        <div class="row">
+          <label class="field"><span>Setup surface</span><input data-k="setup.surface" placeholder="Grass, concrete, asphalt…"></label>
+          <label class="field"><span>Power</span><input data-k="setup.power" placeholder="Outlet within 50 ft, generator…"></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Notes</legend>
+        <label class="field"><span>From the customer</span><textarea data-k="customerNotes" rows="2"></textarea></label>
+        <label class="field"><span>Private notes (crew can't see these)</span><textarea data-k="adminNotes" rows="3"></textarea></label>
+      </fieldset>
+
+      <details class="history" id="edHistoryWrap"><summary>History</summary><ul id="edHistory"></ul></details>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" type="button" id="edDelete">Delete</button>
+      <p class="err" id="edErr" hidden></p>
+      <div class="spacer"></div>
+      <button class="btn btn-outline btn-sm" type="button" data-close>Cancel</button>
+      <button class="btn btn-gold btn-sm" type="submit" id="edSave">Save</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+</body>
+</html>

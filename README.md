@@ -26,5 +26,20 @@ Search the files for `[` to find them.
 - Contact: deposit amounts, balance terms, refund policy, 3 Stripe links
 - Footer (all pages): license number
 
+## Admin / back office (`/admin/`)
+Orders, payments, delivery schedule and reports, at `https://<your-site>/admin/`.
+- **Owner login** sees everything: Orders, Schedule, Reports, and can add phone/quote orders.
+- **Crew login** only sees the Schedule (addresses, rentals, setup notes; no prices or payments) and can check off deliveries and pickups.
+- Paid online bookings are pulled in from Stripe automatically when the admin is opened (or with "Check for new bookings").
+- Orders are stored in Netlify Blobs (built in to Netlify, nothing to sign up for).
+
+Setup, in Netlify → Site configuration → Environment variables:
+- `ADMIN_PASSWORD`: owner password (use something long)
+- `CREW_PASSWORD`: crew password
+- `STRIPE_SECRET_KEY`: already set for checkout; the admin uses it to read bookings
+
+Changing either password logs everyone out. Code: `admin/` (page), `netlify/functions/admin-api.mjs` + `netlify/lib/admin-core.mjs` (API).
+`.claude/admin-test.html` is a local test bench (fake Stripe + in-memory storage) and is not deployed.
+
 ## Preview locally
 Run `.claude/serve.ps1` in PowerShell, then open http://localhost:8080

@@ -75,6 +75,14 @@ exports.handler = async (event) => {
     event_type: d.eventType, guests: d.guests, delivery_window: d.deliveryWindow, pickup_window: d.pickupWindow,
     surface: d.surface, power: d.power, items: itemsText, notes: d.notes
   };
+  // Exact item ids for the admin order list, split so each value stays under Stripe's 500-character limit
+  let chunk = '', n = 0;
+  for (const pair of lines.map(l => `${l.id}:${l.qty}`)) {
+    if (chunk && chunk.length + pair.length + 1 > 480) { meta['cart_' + (++n)] = chunk; chunk = ''; }
+    if (n >= 8) break;
+    chunk += (chunk ? ',' : '') + pair;
+  }
+  if (chunk) meta['cart_' + (++n)] = chunk;
   for (const [k, v] of Object.entries(meta)) {
     if (v == null || v === '') continue;
     p.append(`metadata[${k}]`, clip(v));
